@@ -10,12 +10,33 @@ from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.models import Sequential
 
+def create_model(num_classes = 5):
+    model = Sequential([
+      layers.experimental.preprocessing.Rescaling(1./255, input_shape=(img_height, img_width, 3)),
+      layers.Conv2D(16, 3, padding='same', activation='relu'),
+      layers.MaxPooling2D(),
+      layers.Conv2D(32, 3, padding='same', activation='relu'),
+      layers.MaxPooling2D(),
+      layers.Conv2D(64, 3, padding='same', activation='relu'),
+      layers.MaxPooling2D(),
+      layers.Flatten(),
+      layers.Dense(128, activation='relu'),
+      layers.Dense(num_classes)
+    ])
+    model.compile(optimizer='adam',
+                  loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                  metrics=['accuracy'])
+    return model
+
+
 ''' completed
 import pathlib
 dataset_url = "https://storage.googleapis.com/download.tensorflow.org/example_images/flower_photos.tgz"
 data_dir = tf.keras.utils.get_file('flower_photos', origin=dataset_url, untar=True)
 data_dir = pathlib.Path(data_dir)'''
 data_dir = r'C:\Users\koolv\.keras\datasets\flower_photos'
+
+num_classes = 5
 
 batch_size = 32
 img_height = 180
@@ -54,9 +75,13 @@ for image_batch, labels_batch in train_ds:
   print(labels_batch.shape)
   break
 
+# Create a callback that saves the model's weights
+checkpoint_path = r"C:\Users\koolv\Downloads\Python\Tensorflow\image_recognition\training\cp.ckpt"
+checkpoint_dir = os.path.dirname(checkpoint_path)
+
 #------------------------------------------------------------------------------
 retrain = input("Do you want to retrain model? (1 = yes): ")
-if retrain:
+if retrain == "yes" or retrain == "1":
     AUTOTUNE = tf.data.experimental.AUTOTUNE
 
     train_ds = train_ds.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
@@ -67,10 +92,9 @@ if retrain:
     image_batch, labels_batch = next(iter(normalized_ds))
     first_image = image_batch[0]
     # Notice the pixels values are now in `[0,1]`.
-    print(np.min(first_image), np.max(first_image))
+    #print(np.min(first_image), np.max(first_image))
 
-    num_classes = 5
-
+    #creating model
     model = Sequential([
       layers.experimental.preprocessing.Rescaling(1./255, input_shape=(img_height, img_width, 3)),
       layers.Conv2D(16, 3, padding='same', activation='relu'),
@@ -119,7 +143,7 @@ if retrain:
     plt.plot(epochs_range, val_loss, label='Validation Loss')
     plt.legend(loc='upper right')
     plt.title('Training and Validation Loss')
-    plt.show() #figure 2
+    #plt.show() #figure 2
 
     #additional training
     data_augmentation = keras.Sequential(
@@ -187,29 +211,36 @@ if retrain:
     plt.title('Training and Validation Loss')
     plt.show()
     #-------------------------------------------------------------------------------
-
-    checkpoint_path = "training_1/cp.ckpt"
-    checkpoint_dir = os.path.dirname(checkpoint_path)
-    # Create a callback that saves the model's weights
-    cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
-                                                     save_weights_only=True,
-                                                     verbose=1)
+    # Save the weights using the `checkpoint_path` format
+    model.save_weights(checkpoint_path.format(epoch=0)) #saves weights *******
+    model.save('saved_model/my_model')
     '''# Train the model with the new callback
+    model.fit(train_images,
+    train_labels,
+    epochs=50,
+    callbacks=[cp_callback],
+    validation_data=(test_images,test_labels),
+    verbose=0)
+    # Train the model with the new callback
     # i think this adds to previous checkpointed data
     model.fit(train_images,
               train_labels,
               epochs=10,
               validation_data=(test_images,test_labels),
               callbacks=[cp_callback])  # Pass callback to training'''
-else:
-    checkpoint_path = input("Input path to saved model: ")
 
 #testing models
 # Create a basic model instance
 model_new = create_model()
 
 # Evaluate the model
-model.load_weights(checkpoint_path)
+model = create_model()
+print("loading weights...")
+model.load_weights(checkpoint_path) #using last checkpointed weights for training
+#new_model.load_model('saved_model/my_model')
+new_model = tf.keras.models.load_model('saved_model/my_model')
+# Check its architecture
+new_model.summary()
 
 #classifying object
 
@@ -222,7 +253,7 @@ img = keras.preprocessing.image.load_img(
 img_array = keras.preprocessing.image.img_to_array(img)
 img_array = tf.expand_dims(img_array, 0) # Create a batch
 
-predictions = model_new.predict(img_array)
+predictions = model_new.predict(img_array) # not working
 score = tf.nn.softmax(predictions[0])
 print(
     "BASIC model: This image most likely belongs to {} with a {:.2f} percent confidence."
@@ -235,3 +266,4 @@ print(
     .format(class_names[np.argmax(score)], 100 * np.max(score)))
 
 #'https://cdn.britannica.com/84/73184-004-E5A450B5/Sunflower-field-Fargo-North-Dakota.jpg'
+#github saving: git init > git add filename > git commit -m "adding files" > git remote add origin https://github.com/yourusername/your-repo-name.git > git push -u origin master
