@@ -62,7 +62,6 @@ class_names = train_ds.class_names
 print(class_names)
 
 #visualize data
-
 plt.figure(figsize=(10, 10))
 for images, labels in train_ds.take(1):
   for i in range(9):
@@ -70,6 +69,7 @@ for images, labels in train_ds.take(1):
     plt.imshow(images[i].numpy().astype("uint8"))
     plt.title(class_names[labels[i]])
     plt.axis("off")
+    plt.savefig('image_test1.png')
 for image_batch, labels_batch in train_ds:
   print(image_batch.shape)
   print(labels_batch.shape)
@@ -163,6 +163,7 @@ if retrain == "yes" or retrain == "1":
         ax = plt.subplot(3, 3, i + 1)
         plt.imshow(augmented_images[0].numpy().astype("uint8"))
         plt.axis("off")
+        plt.savefig('images_test2.png') #added
 
     model = Sequential([
       data_augmentation,
@@ -209,7 +210,8 @@ if retrain == "yes" or retrain == "1":
     plt.plot(epochs_range, val_loss, label='Validation Loss')
     plt.legend(loc='upper right')
     plt.title('Training and Validation Loss')
-    plt.show()
+    #plt.show()
+    plt.savefig('Training and Validation Loss.png')
     #-------------------------------------------------------------------------------
     # Save the weights using the `checkpoint_path` format
     model.save_weights(checkpoint_path.format(epoch=0)) #saves weights *******
@@ -244,11 +246,11 @@ new_model.summary()
 
 #classifying object
 
-sunflower_url = "https://cdn.britannica.com/84/73184-004-E5A450B5/Sunflower-field-Fargo-North-Dakota.jpg" #"https://storage.googleapis.com/download.tensorflow.org/example_images/592px-Red_sunflower.jpg"
-sunflower_path = tf.keras.utils.get_file('Red_sunflower', origin=sunflower_url)
+image_url = "https://www.lakeforest.edu/live/image/gid/140/width/480/height/329/21711_dandelion1.rev.1401296268.jpg" #"https://storage.googleapis.com/download.tensorflow.org/example_images/592px-Red_sunflower.jpg"
+image_path = tf.keras.utils.get_file('input_data', origin=image_url,extract=True)
 
 img = keras.preprocessing.image.load_img(
-    sunflower_path, target_size=(img_height, img_width)
+    image_path, target_size=(img_height, img_width)
 )
 img_array = keras.preprocessing.image.img_to_array(img)
 img_array = tf.expand_dims(img_array, 0) # Create a batch
